@@ -1,0 +1,33 @@
+aws iam list-roles | jq ".Roles[].RoleName" | add-content roles.csv # Trae todos los roles de "list-roles" y selecciona el nombre "roles[].RolName y los agrega a un documento llamado "roles.csv""
+
+Import-Csv entrada.csv | % { #Recorre el csv con "usuarios,rol"
+
+   import-csv roles.csv | % { #recorre los roles existentes
+ 
+        if($_.rol -notlike $_.Roles[].RoleName) # Si no existe el rol en los roles existentes lo crea
+        { 
+           echo "$rol no existe!`n Creando Grupo"
+           aws iam create-role --role-name $rol --assume-role-policy-document file://$rol.json
+        }
+   
+    }
+
+}
+
+
+#Toma el archivo separado con comas "usuario,rol" y lo recorre por fila
+Import-Csv entrada.csv | % { 
+
+    $usuario = $_.usuario
+    $rol = $_.rol
+
+    ARN= $(aws iam get-role --role-name $rol | jq ".Role.Arn") #no entiendo      
+    aws iam attach-user-policy  --policy-arn "${ARN}" --user-name "${usuario}" #menos entiendo
+
+    add-user-to-group --group-name $_.rol --user-name $_.usuario #agrega al grupo de la fila, el usuario de la fila
+
+
+          
+    
+
+}
